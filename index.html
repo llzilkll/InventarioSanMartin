@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Control de Inventario</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9faff;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 25px;
+      font-weight: 700;
+    }
+    .container {
+      background: white;
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgb(0 0 0 / 0.1);
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 15px;
+      margin-bottom: 6px;
+      color: #34495e;
+    }
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1.8px solid #dce3ea;
+      transition: border-color 0.3s ease;
+    }
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    button {
+      margin-top: 22px;
+      width: 100%;
+      padding: 14px 0;
+      font-weight: 700;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #3498db;
+      color: white;
+      box-shadow: 0 4px 10px rgb(52 152 219 / 0.5);
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .hidden {
+      display: none !important;
+    }
+    ul {
+      max-width: 420px;
+      padding: 0;
+      list-style: none;
+      width: 100%;
+    }
+    ul li {
+      background: #d6e9ff;
+      margin-bottom: 10px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      color: #2c3e50;
+      font-size: 15px;
+      font-weight: 600;
+      box-shadow: 0 2px 5px rgb(0 0 0 / 0.05);
+      position: relative;
+    }
+    .btn-borrar {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 18px;
+      text-align: center;
+      padding: 0;
+      user-select: none;
+    }
+    .btn-borrar:hover {
+      background: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Control de Inventario</h1>
+
+  <div class="container" id="inicio">
+    <button id="btnIngreso">Ingreso de Productos</button>
+    <button id="btnMovimiento">Movimiento de Ubicaciones</button>
+    <button id="btnMaestro">Maestro</button>
+  </div>
+
+  <div class="container hidden" id="ingreso">
+    <form id="formIngreso">
+      <label for="producto">Catálogo:</label>
+      <input type="number" id="producto" required />
+      <label for="cantidad">Cantidad Recibida:</label>
+      <input type="number" id="cantidad" required />
+      <label for="ubicacion">Ubicación:</label>
+      <input type="text" id="ubicacion" required />
+      <button type="submit">Guardar Ingreso</button>
+    </form>
+    <button id="volverDesdeIngreso">Volver al Inicio</button>
+  </div>
+
+  <div class="container hidden" id="movimiento">
+    <form id="formMovimiento">
+      <label for="ubicacionDesde">De:</label>
+      <input type="text" id="ubicacionDesde" required />
+      <label for="ubicacionHasta">A:</label>
+      <input type="text" id="ubicacionHasta" required />
+      <button type="submit">Guardar Movimiento</button>
+    </form>
+    <button id="volverDesdeMovimiento">Volver al Inicio</button>
+  </div>
+
+  <div class="container">
+    <button id="exportarExcel">Exportar a Excel</button>
+  </div>
+
+  <h2>Movimientos Guardados</h2>
+  <ul id="lista"></ul>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    const inventario = [];
+    const lista = document.getElementById('lista');
+
+    function mostrarSeccion(id) {
+      document.getElementById('inicio').classList.add('hidden');
+      document.getElementById('ingreso').classList.add('hidden');
+      document.getElementById('movimiento').classList.add('hidden');
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function volverInicio() {
+      mostrarSeccion('inicio');
+    }
+
+    function agregarItemLista(texto, index) {
+      const li = document.createElement('li');
+      li.textContent = texto;
+      const btn = document.createElement('button');
+      btn.className = 'btn-borrar';
+      btn.textContent = '×';
+      btn.onclick = () => {
+        if (confirm("¿Eliminar este movimiento?")) {
+          inventario.splice(index, 1);
+          guardarInventario();
+          renderizarLista();
+        }
+      };
+      li.appendChild(btn);
+      lista.appendChild(li);
+    }
+
+    function renderizarLista() {
+      lista.innerHTML = '';
+      inventario.forEach((item, index) => {
+        let texto = item.Tipo === "Ingreso" ?
+          `[${item.Hora}] Catálogo: ${item.Catálogo} - ${item.Cantidad} unidades - Rack: ${item.Ubicación}` :
+          `[${item.Hora}] Movimiento: de ${item.Desde} a ${item.Hasta}`;
+        agregarItemLista(texto, index);
+      });
+    }
+
+    function guardarInventario() {
+      localStorage.setItem('inventario', JSON.stringify(inventario));
+    }
+
+    function cargarInventario() {
+      const data = localStorage.getItem('inventario');
+      if (data) {
+        try {
+          const arr = JSON.parse(data);
+          if (Array.isArray(arr)) {
+            arr.forEach(item => inventario.push(item));
+            renderizarLista();
+          }
+        } catch (e) {
+          console.error("Error al cargar inventario:", e);
+        }
+      }
+    }
+
+    window.addEventListener('load', cargarInventario);
+
+    document.getElementById('btnIngreso').onclick = () => mostrarSeccion('ingreso');
+    document.getElementById('btnMovimiento').onclick = () => mostrarSeccion('movimiento');
+    document.getElementById('volverDesdeIngreso').onclick = volverInicio;
+    document.getElementById('volverDesdeMovimiento').onclick = volverInicio;
+
+    document.getElementById('formIngreso').addEventListener('submit', e => {
+      e.preventDefault();
+      const producto = e.target.producto.value.trim();
+      const cantidad = e.target.cantidad.value.trim();
+      const ubicacion = e.target.ubicacion.value.trim();
+      const timestamp = new Date().toLocaleString();
+      inventario.push({ Tipo: "Ingreso", Catálogo: producto, Cantidad: cantidad, Ubicación: ubicacion, Hora: timestamp });
+      guardarInventario();
+      renderizarLista();
+      e.target.reset();
+      volverInicio();
+    });
+
+    document.getElementById('formMovimiento').addEventListener('submit', e => {
+      e.preventDefault();
+      const desde = e.target.ubicacionDesde.value.trim();
+      const hasta = e.target.ubicacionHasta.value.trim();
+      const timestamp = new Date().toLocaleString();
+      inventario.push({ Tipo: "Movimiento", Desde: desde, Hasta: hasta, Hora: timestamp });
+      guardarInventario();
+      renderizarLista();
+      e.target.reset();
+      volverInicio();
+    });
+
+    document.getElementById('exportarExcel').addEventListener('click', () => {
+      if (inventario.length === 0) return alert("No hay datos para exportar.");
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(inventario);
+      XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+      XLSX.writeFile(wb, "inventario.xlsx");
+      inventario.length = 0;
+      localStorage.removeItem('inventario');
+      renderizarLista();
+    });
+
+    document.getElementById('btnMaestro').onclick = () => {
+      fetch('maestro.json')
+        .then(resp => resp.json())
+        .then(data => {
+          const entrada = prompt("Buscar por catálogo o descripción:");
+          if (!entrada) return;
+          const resultado = data.find(item => item.catalogo == entrada || item.descripcion.toLowerCase().includes(entrada.toLowerCase()));
+          if (resultado) {
+            alert(`Catálogo: ${resultado.catalogo}\nDescripción: ${resultado.descripcion}`);
+          } else {
+            alert("Producto no encontrado.");
+          }
+        })
+        .catch(() => alert("Error al cargar JSON maestro."));
+    };
+  </script>
+</body>
+</html>
