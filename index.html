@@ -37,7 +37,7 @@
       margin-bottom: 6px;
       color: #34495e;
     }
-    input[type="number"], input[type="text"] {
+    input[type="number"], input[type="text"], select {
       width: 100%;
       padding: 10px 12px;
       font-size: 16px;
@@ -45,14 +45,9 @@
       border: 1.8px solid #dce3ea;
       transition: border-color 0.3s ease;
     }
-    input:focus {
+    input:focus, select:focus {
       border-color: #3498db;
       outline: none;
-    }
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
     }
     button {
       margin-top: 22px;
@@ -72,8 +67,6 @@
     .hidden { display: none !important; }
     ul { max-width: 420px; padding: 0; list-style: none; width: 100%; }
     ul li {
-      position: relative;
-      padding-right: 30px;
       background: #d6e9ff;
       margin-bottom: 10px;
       padding: 12px 18px;
@@ -82,6 +75,8 @@
       font-size: 15px;
       font-weight: 600;
       box-shadow: 0 2px 5px rgb(0 0 0 / 0.05);
+      position: relative;
+      padding-right: 30px;
     }
     .btn-borrar {
       position: absolute;
@@ -103,20 +98,6 @@
       user-select: none;
     }
     .btn-borrar:hover { background: #c0392b; }
-    h2 {
-      color: #34495e;
-      margin-bottom: 15px;
-      font-weight: 700;
-      max-width: 420px;
-      width: 100%;
-    }
-    @media (max-width: 480px) {
-      body { padding: 15px; }
-      h1 { font-size: 26px; }
-      button { font-size: 16px; padding: 12px 0; }
-      input { font-size: 15px; padding: 9px 10px; }
-      ul li { font-size: 14px; padding: 10px 14px; }
-    }
   </style>
 </head>
 <body>
@@ -135,188 +116,18 @@
     <input type="number" id="producto" required />
     <label for="cantidad">Cantidad Recibida:</label>
     <input type="number" id="cantidad" required />
+    <label for="estado">Estado:</label>
+    <select id="estado" required>
+      <option value="">Seleccione una opción</option>
+      <option value="Reuso">Reuso</option>
+      <option value="Venta">Venta</option>
+      <option value="Scrap">Scrap</option>
+      <option value="Sin Detalle">Sin Detalle</option>
+      <option value="Publicación">Publicación</option>
+    </select>
     <label for="ubicacion">Ubicación (ej: 1-2-3):</label>
     <input type="text" id="ubicacion" pattern="^[0-9]+-[0-9]+-[0-9]+$" title="Formato: número-número-número" required />
     <button type="submit">Guardar Ingreso</button>
   </form>
   <button id="volverDesdeIngreso">Volver al Inicio</button>
 </div>
-
-<div class="container hidden" id="movimiento">
-  <form id="formMovimiento">
-    <label for="ubicacionDesde">De Ubicación:</label>
-    <input type="text" id="ubicacionDesde" pattern="^[0-9]+-[0-9]+-[0-9]+$" required />
-    <label for="ubicacionHasta">A Ubicación:</label>
-    <input type="text" id="ubicacionHasta" pattern="^[0-9]+-[0-9]+-[0-9]+$" required />
-    <button type="submit">Guardar Movimiento</button>
-  </form>
-  <button id="volverDesdeMovimiento">Volver al Inicio</button>
-</div>
-
-<!-- Maestro -->
-<div class="container hidden" id="maestro">
-  <label for="busquedaMaestro">Buscar catálogo, descripción o código de parte:</label>
-  <input type="text" id="busquedaMaestro" placeholder="Ej: tornillo, 123, A45X..." />
-  <ul id="resultadosMaestro"></ul>
-  <button id="volverDesdeMaestro">Volver al Inicio</button>
-</div>
-
-<div class="container">
-  <button id="exportarExcel">Exportar a Excel</button>
-</div>
-
-<h2>Movimientos Guardados</h2>
-<ul id="lista"></ul>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-  const inventario = [];
-  const lista = document.getElementById('lista');
-
-  function mostrarSeccion(id) {
-    ['inicio', 'ingreso', 'movimiento', 'maestro'].forEach(sec =>
-      document.getElementById(sec).classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
-  }
-
-  function volverInicio() { mostrarSeccion('inicio'); }
-
-  function agregarItemLista(texto, index) {
-    const li = document.createElement('li');
-    li.textContent = texto;
-    const btnBorrar = document.createElement('button');
-    btnBorrar.textContent = '×';
-    btnBorrar.className = 'btn-borrar';
-    btnBorrar.title = "Eliminar movimiento";
-    btnBorrar.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (confirm("¿Seguro querés eliminar este movimiento?")) {
-        inventario.splice(index, 1);
-        guardarInventario();
-        cargarLista();
-      }
-    });
-    li.appendChild(btnBorrar);
-    lista.appendChild(li);
-  }
-
-  function guardarInventario() {
-    localStorage.setItem('inventario', JSON.stringify(inventario));
-  }
-
-  function cargarLista() {
-    lista.innerHTML = '';
-    inventario.forEach((item, idx) => {
-      let texto = '';
-      if (item.Tipo === "Ingreso") {
-        texto = `[${item.Hora}] Catálogo: ${item.Catálogo} - ${item.Cantidad} unidades - Rack: ${item.Ubicación}`;
-      } else if (item.Tipo === "Movimiento") {
-        texto = `[${item.Hora}] Movimiento: de ${item.Desde} a ${item.Hasta}`;
-      }
-      agregarItemLista(texto, idx);
-    });
-  }
-
-  function cargarInventario() {
-    const data = localStorage.getItem('inventario');
-    inventario.length = 0;
-    if (data) {
-      try {
-        const arr = JSON.parse(data);
-        if (Array.isArray(arr)) inventario.push(...arr);
-      } catch (e) { console.error("Error al cargar inventario:", e); }
-    }
-    cargarLista();
-  }
-
-  window.addEventListener('load', cargarInventario);
-
-  document.getElementById('btnIngreso').onclick = () => mostrarSeccion('ingreso');
-  document.getElementById('btnMovimiento').onclick = () => mostrarSeccion('movimiento');
-  document.getElementById('btnMaestro').onclick = () => mostrarSeccion('maestro');
-  document.getElementById('volverDesdeIngreso').onclick = volverInicio;
-  document.getElementById('volverDesdeMovimiento').onclick = volverInicio;
-  document.getElementById('volverDesdeMaestro').onclick = volverInicio;
-
-  document.getElementById('formIngreso').addEventListener('submit', e => {
-    e.preventDefault();
-    const producto = e.target.producto.value.trim();
-    const cantidad = e.target.cantidad.value.trim();
-    const ubicacion = e.target.ubicacion.value.trim();
-    if (!producto || !cantidad || !ubicacion) return alert("Completa todos los campos");
-    const timestamp = new Date().toLocaleString();
-    inventario.push({
-      Tipo: "Ingreso",
-      Catálogo: producto,
-      Cantidad: cantidad,
-      Ubicación: ubicacion,
-      Hora: timestamp
-    });
-    guardarInventario();
-    cargarLista();
-    e.target.reset();
-    volverInicio();
-  });
-
-  document.getElementById('formMovimiento').addEventListener('submit', e => {
-    e.preventDefault();
-    const desde = e.target.ubicacionDesde.value.trim();
-    const hasta = e.target.ubicacionHasta.value.trim();
-    if (!desde || !hasta) return alert("Completa todos los campos");
-    const timestamp = new Date().toLocaleString();
-    inventario.push({
-      Tipo: "Movimiento",
-      Desde: desde,
-      Hasta: hasta,
-      Hora: timestamp
-    });
-    guardarInventario();
-    cargarLista();
-    e.target.reset();
-    volverInicio();
-  });
-
-  document.getElementById('exportarExcel').addEventListener('click', () => {
-    if (inventario.length === 0) return alert("No hay datos para exportar.");
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(inventario);
-    XLSX.utils.book_append_sheet(wb, ws, "Inventario");
-    XLSX.writeFile(wb, "inventario.xlsx");
-    inventario.length = 0;
-    localStorage.removeItem('inventario');
-    lista.innerHTML = '';
-    alert("Datos exportados y limpiados.");
-  });
-
-  // Búsqueda en Maestro
-  document.getElementById('busquedaMaestro').addEventListener('input', e => {
-    const valor = e.target.value.trim().toLowerCase();
-    const listaResultados = document.getElementById('resultadosMaestro');
-    listaResultados.innerHTML = '';
-    if (!valor) return;
-    fetch('maestro.json')
-      .then(resp => resp.json())
-      .then(data => {
-        const filtrados = data.filter(item =>
-          item.catalogo.toString().includes(valor) ||
-          item.descripcion.toLowerCase().includes(valor) ||
-          (item.codigo_parte && item.codigo_parte.toLowerCase().includes(valor))
-        );
-        if (filtrados.length === 0) {
-          listaResultados.innerHTML = '<li>No se encontraron resultados.</li>';
-          return;
-        }
-        filtrados.forEach(item => {
-          const li = document.createElement('li');
-          const codParte = item.codigo_parte ? ` - Código parte: ${item.codigo_parte}` : '';
-          li.textContent = `Catálogo: ${item.catalogo} - ${item.descripcion}${codParte}`;
-          listaResultados.appendChild(li);
-        });
-      })
-      .catch(() => {
-        listaResultados.innerHTML = '<li>Error al cargar JSON maestro.</li>';
-      });
-  });
-</script>
-</body>
-</html>
