@@ -53,11 +53,6 @@
       border-color: #3498db;
       outline: none;
     }
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
     button {
       margin-top: 22px;
       width: 100%;
@@ -117,6 +112,10 @@
     .btn-borrar:hover {
       background: #c0392b;
     }
+    .resultados {
+      margin-top: 15px;
+      padding-left: 0;
+    }
   </style>
 </head>
 <body>
@@ -128,7 +127,7 @@
     <button id="btnMaestro">Maestro</button>
   </div>
 
-  <div class="container hidden" id="ingreso">
+  <div class="container hidden" id="ingreso"> <!-- ingreso -->
     <form id="formIngreso">
       <label for="producto">Catálogo:</label>
       <input type="number" id="producto" required />
@@ -141,7 +140,7 @@
     <button id="volverDesdeIngreso">Volver al Inicio</button>
   </div>
 
-  <div class="container hidden" id="movimiento">
+  <div class="container hidden" id="movimiento"> <!-- movimiento -->
     <form id="formMovimiento">
       <label for="ubicacionDesde">De:</label>
       <input type="text" id="ubicacionDesde" required />
@@ -150,6 +149,13 @@
       <button type="submit">Guardar Movimiento</button>
     </form>
     <button id="volverDesdeMovimiento">Volver al Inicio</button>
+  </div>
+
+  <div class="container hidden" id="maestro"> <!-- maestro -->
+    <label for="busquedaMaestro">Buscar catálogo o descripción:</label>
+    <input type="text" id="busquedaMaestro" placeholder="Ej: tornillo, 123..." />
+    <ul id="resultadosMaestro" class="resultados"></ul>
+    <button id="volverDesdeMaestro">Volver al Inicio</button>
   </div>
 
   <div class="container">
@@ -168,6 +174,7 @@
       document.getElementById('inicio').classList.add('hidden');
       document.getElementById('ingreso').classList.add('hidden');
       document.getElementById('movimiento').classList.add('hidden');
+      document.getElementById('maestro').classList.add('hidden');
       document.getElementById(id).classList.remove('hidden');
     }
 
@@ -225,8 +232,10 @@
 
     document.getElementById('btnIngreso').onclick = () => mostrarSeccion('ingreso');
     document.getElementById('btnMovimiento').onclick = () => mostrarSeccion('movimiento');
+    document.getElementById('btnMaestro').onclick = () => mostrarSeccion('maestro');
     document.getElementById('volverDesdeIngreso').onclick = volverInicio;
     document.getElementById('volverDesdeMovimiento').onclick = volverInicio;
+    document.getElementById('volverDesdeMaestro').onclick = volverInicio;
 
     document.getElementById('formIngreso').addEventListener('submit', e => {
       e.preventDefault();
@@ -264,21 +273,32 @@
       renderizarLista();
     });
 
-    document.getElementById('btnMaestro').onclick = () => {
+    document.getElementById('busquedaMaestro').addEventListener('input', e => {
+      const valor = e.target.value.trim().toLowerCase();
+      const listaResultados = document.getElementById('resultadosMaestro');
+      listaResultados.innerHTML = '';
+      if (!valor) return;
       fetch('maestro.json')
         .then(resp => resp.json())
         .then(data => {
-          const entrada = prompt("Buscar por catálogo o descripción:");
-          if (!entrada) return;
-          const resultado = data.find(item => item.catalogo == entrada || item.descripcion.toLowerCase().includes(entrada.toLowerCase()));
-          if (resultado) {
-            alert(`Catálogo: ${resultado.catalogo}\nDescripción: ${resultado.descripcion}`);
-          } else {
-            alert("Producto no encontrado.");
+          const filtrados = data.filter(item =>
+            item.catalogo.toString().includes(valor) ||
+            item.descripcion.toLowerCase().includes(valor)
+          );
+          if (filtrados.length === 0) {
+            listaResultados.innerHTML = '<li>No se encontraron resultados.</li>';
+            return;
           }
+          filtrados.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `Catálogo: ${item.catalogo} - ${item.descripcion}`;
+            listaResultados.appendChild(li);
+          });
         })
-        .catch(() => alert("Error al cargar JSON maestro."));
-    };
+        .catch(() => {
+          listaResultados.innerHTML = '<li>Error al cargar JSON maestro.</li>';
+        });
+    });
   </script>
 </body>
 </html>
