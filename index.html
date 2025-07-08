@@ -136,7 +136,7 @@
     <label for="cantidad">Cantidad Recibida:</label>
     <input type="number" id="cantidad" required />
     <label for="ubicacion">Ubicación (ej: 1-2-3):</label>
-    <input type="text" id="ubicacion" pattern="^\\d+-\\d+-\\d+$" title="Formato: número-número-número" required />
+    <input type="text" id="ubicacion" pattern="^[0-9]+-[0-9]+-[0-9]+$" title="Formato: número-número-número" required />
     <button type="submit">Guardar Ingreso</button>
   </form>
   <button id="volverDesdeIngreso">Volver al Inicio</button>
@@ -145,9 +145,9 @@
 <div class="container hidden" id="movimiento">
   <form id="formMovimiento">
     <label for="ubicacionDesde">De Ubicación:</label>
-    <input type="text" id="ubicacionDesde" pattern="^\\d+-\\d+-\\d+$" required />
+    <input type="text" id="ubicacionDesde" pattern="^[0-9]+-[0-9]+-[0-9]+$" required />
     <label for="ubicacionHasta">A Ubicación:</label>
-    <input type="text" id="ubicacionHasta" pattern="^\\d+-\\d+-\\d+$" required />
+    <input type="text" id="ubicacionHasta" pattern="^[0-9]+-[0-9]+-[0-9]+$" required />
     <button type="submit">Guardar Movimiento</button>
   </form>
   <button id="volverDesdeMovimiento">Volver al Inicio</button>
